@@ -86,6 +86,13 @@ export async function createCreemCheckoutSession(
       cancelUrl,
     })
 
+    if (!checkoutUrl) {
+      return {
+        error:
+          'Creem payment link is currently being configured or is under review in Creem. Once ready, add your Creem checkout link to NEXT_PUBLIC_CREEM_CHECKOUT_URL in Vercel.',
+      }
+    }
+
     return { checkoutUrl, isDirectLink: true }
   } catch (err: any) {
     console.error('createCreemCheckoutSession error:', err)

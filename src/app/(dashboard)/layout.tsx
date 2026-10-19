@@ -8,11 +8,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: subscription }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('subscriptions').select('*').eq('user_id', user.id).maybeSingle(),
+  ])
+
+  // If user hasn't completed onboarding, send to onboarding
+  if (!profile?.onboarding_completed) {
+    redirect('/onboarding')
+  }
+
+  // Paywall guard: user must have an active or trialing subscription
+  const hasAccess =
+    subscription &&
+    (subscription.status === 'active' || subscription.status === 'trialing')
+
+  if (!hasAccess) {
+    redirect('/checkout')
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden bg-[#F6F6F4]">

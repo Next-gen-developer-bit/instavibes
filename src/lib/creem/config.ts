@@ -24,7 +24,7 @@ export function getCreemConfig() {
   const defaultCheckout =
     process.env.NEXT_PUBLIC_CREEM_CHECKOUT_URL ||
     process.env.CREEM_CHECKOUT_URL ||
-    'https://checkout.creem.io'
+    ''
 
   const monthlyCheckout =
     process.env.NEXT_PUBLIC_CREEM_CHECKOUT_URL_MONTHLY ||
@@ -48,11 +48,20 @@ export function getCreemConfig() {
 /**
  * Builds a ready-to-redirect Creem checkout URL with customer metadata prefilled.
  */
-export function buildCreemCheckoutUrl(options: CreemCheckoutOptions = {}): string {
+export function buildCreemCheckoutUrl(options: CreemCheckoutOptions = {}): string | null {
   const config = getCreemConfig()
   const baseUrl = options.billingInterval === 'year'
     ? config.annualCheckoutUrl
     : config.monthlyCheckoutUrl
+
+  if (
+    !baseUrl ||
+    baseUrl.trim() === '' ||
+    baseUrl === 'https://checkout.creem.io' ||
+    baseUrl.includes('placeholder')
+  ) {
+    return null
+  }
 
   try {
     const url = new URL(baseUrl)

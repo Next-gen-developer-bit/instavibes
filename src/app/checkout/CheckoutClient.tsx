@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Lock,
   ArrowRight,
+  ArrowLeft,
   Loader2,
   Brain,
   Instagram,
@@ -41,10 +42,20 @@ export default function CheckoutClient({
   const [error, setError] = useState<string | null>(null)
 
   const isConfigured = Boolean(
-    defaultCreemUrl && !defaultCreemUrl.includes('placeholder')
+    defaultCreemUrl &&
+      defaultCreemUrl.trim() !== '' &&
+      !defaultCreemUrl.includes('placeholder') &&
+      defaultCreemUrl !== 'https://checkout.creem.io'
   )
 
   const handleStartCheckout = async () => {
+    if (!isConfigured) {
+      setError(
+        'Creem checkout link is not configured yet or is currently under review in Creem. Once approved, add your Creem checkout link to NEXT_PUBLIC_CREEM_CHECKOUT_URL in Vercel.'
+      )
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -58,10 +69,8 @@ export default function CheckoutClient({
       }
 
       if (res.checkoutUrl) {
-        // Redirect directly to the Creem checkout hosted session
         window.location.href = res.checkoutUrl
       } else {
-        // Fallback to success/studio if local dev testing without credentials
         router.push('/checkout/success')
       }
     } catch (err: any) {
@@ -90,9 +99,23 @@ export default function CheckoutClient({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-white/60">
-          <Lock className="h-3.5 w-3.5 text-emerald-400" />
-          <span>Creem Verified Secure Checkout</span>
+        {/* Back and Cancel Navigation */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 cursor-pointer"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back</span>
+          </button>
+
+          <Link
+            href="/"
+            className="text-xs font-semibold text-white/50 hover:text-white transition px-3 py-1.5 rounded-xl border border-transparent hover:border-white/10 hover:bg-white/5 cursor-pointer"
+          >
+            Cancel
+          </Link>
         </div>
       </header>
 
@@ -130,7 +153,7 @@ export default function CheckoutClient({
           <div className="mt-8 inline-flex items-center rounded-full bg-white/5 border border-white/10 p-1">
             <button
               onClick={() => setInterval('month')}
-              className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition ${
+              className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition cursor-pointer ${
                 interval === 'month'
                   ? 'bg-white text-black shadow-md'
                   : 'text-white/70 hover:text-white'
@@ -140,88 +163,88 @@ export default function CheckoutClient({
             </button>
             <button
               onClick={() => setInterval('year')}
-              className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 ${
+              className={`rounded-full px-5 py-2 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 cursor-pointer ${
                 interval === 'year'
                   ? 'bg-white text-black shadow-md'
                   : 'text-white/70 hover:text-white'
               }`}
             >
               <span>Annual ($100/yr)</span>
-              <span className="rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] px-1.5 py-0.5 font-bold">
-                2 Mo Free
+              <span className="rounded-full bg-[#FF5A36] px-1.5 py-0.2 text-[10px] font-bold text-white">
+                Save 17%
               </span>
             </button>
           </div>
         </div>
 
-        {/* 2-Column Checkout Card */}
+        {/* Pricing & Checkout Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: What's Included */}
-          <div className="lg:col-span-7 rounded-3xl bg-white/[0.03] border border-white/8 p-6 sm:p-8 backdrop-blur-xl">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#FF5A36]" />
-              Everything unlocked in your trial:
-            </h2>
+          <div className="lg:col-span-7 rounded-3xl bg-white/[0.03] border border-white/8 p-6 sm:p-8 backdrop-blur-xl space-y-6">
+            <div className="flex items-center gap-2 text-sm font-bold text-white/90">
+              <Sparkles className="h-4 w-4 text-[#FF5A36]" />
+              <span>Everything unlocked in your trial:</span>
+            </div>
 
-            <div className="mt-6 space-y-4">
+            <div className="space-y-4">
               <div className="flex items-start gap-3.5">
-                <div className="h-8 w-8 rounded-xl bg-[#FF5A36]/15 flex items-center justify-center shrink-0 text-[#FF5A36]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 shrink-0 border border-purple-500/20">
                   <Brain className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-white">
                     Personalized Content Brain
-                  </h3>
-                  <p className="text-xs text-white/60 mt-0.5">
+                  </h4>
+                  <p className="text-xs text-white/60 mt-0.5 leading-relaxed">
                     Analyzes viral reels and writes original scripts matching your exact tone, cadence, and target audience.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3.5">
-                <div className="h-8 w-8 rounded-xl bg-orange-500/15 flex items-center justify-center shrink-0 text-orange-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 shrink-0 border border-orange-500/20">
                   <Zap className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-white">
                     Unlimited Reel Script Studio
-                  </h3>
-                  <p className="text-xs text-white/60 mt-0.5">
+                  </h4>
+                  <p className="text-xs text-white/60 mt-0.5 leading-relaxed">
                     Paste any trending Instagram reel URL to break down hook structures and generate camera-ready scripts.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3.5">
-                <div className="h-8 w-8 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0 text-purple-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-500/10 text-[#E1306C] shrink-0 border border-rose-500/20">
                   <Instagram className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-white">
                     Outlier Radar & Niche Insights
-                  </h3>
-                  <p className="text-xs text-white/60 mt-0.5">
+                  </h4>
+                  <p className="text-xs text-white/60 mt-0.5 leading-relaxed">
                     Curated feed of outlier Instagram reels winning across tech, fitness, finance, lifestyle, and comedy.
                   </p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3.5">
-                <div className="h-8 w-8 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0 text-emerald-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0 border border-emerald-500/20">
                   <Calendar className="h-4 w-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-white">
                     Posting Calendar & Script Vault
-                  </h3>
-                  <p className="text-xs text-white/60 mt-0.5">
+                  </h4>
+                  <p className="text-xs text-white/60 mt-0.5 leading-relaxed">
                     Plan dated shooting schedules and keep all your hooks and scripts organized in one place.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-white/8 flex items-center justify-between text-xs text-white/50">
+            <div className="pt-4 border-t border-white/8 flex items-center justify-between text-xs text-white/50">
               <span className="flex items-center gap-1.5">
                 <ShieldCheck className="h-4 w-4 text-emerald-400" />
                 Cancel anytime with 1 click
@@ -230,13 +253,11 @@ export default function CheckoutClient({
             </div>
           </div>
 
-          {/* Right Column: Order Summary & Creem CTA */}
-          <div className="lg:col-span-5 rounded-3xl bg-gradient-to-b from-white/[0.08] to-white/[0.02] border border-white/12 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 h-32 w-32 bg-[#FF5A36]/10 rounded-full blur-2xl pointer-events-none" />
-
+          {/* Right Column: Order Summary Card */}
+          <div className="lg:col-span-5 rounded-3xl bg-white/[0.04] border border-white/12 p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative">
             <div className="flex items-center justify-between pb-4 border-b border-white/8">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#FF5A36]">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#FF8C42]">
                   Subscription Plan
                 </p>
                 <h3 className="text-xl font-black text-white mt-0.5">
@@ -277,9 +298,21 @@ export default function CheckoutClient({
             </div>
 
             {error && (
-              <div className="mt-3 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{error}</span>
+              <div className="mt-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400 flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{error}</span>
+              </div>
+            )}
+
+            {!isConfigured && (
+              <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-left space-y-1">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  <span>Payment Gateway Under Review</span>
+                </div>
+                <p className="text-[11px] text-amber-300/80 leading-relaxed">
+                  Creem checkout is being configured or is under review. Once your product link is generated in Creem, add it to <code className="text-white bg-black/40 px-1 py-0.5 rounded font-mono text-[10px]">NEXT_PUBLIC_CREEM_CHECKOUT_URL</code> in Vercel to start live payments.
+                </p>
               </div>
             )}
 
@@ -291,7 +324,7 @@ export default function CheckoutClient({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Redirecting to Creem…</span>
+                  <span>Connecting to Checkout…</span>
                 </>
               ) : (
                 <>
@@ -302,30 +335,27 @@ export default function CheckoutClient({
             </button>
 
             <p className="mt-3 text-center text-[11px] text-white/40">
-              Secured by <span className="font-semibold text-white/70">Creem</span>. Cancel anytime before trial ends and you won't be charged.
+              Secured by <span className="font-semibold text-white/70">Creem</span>. Cancel anytime before trial ends and you won&apos;t be charged.
             </p>
-
-            {/* Creem Developer / Setup Note */}
-            {!isConfigured && (
-              <div className="mt-6 rounded-xl bg-white/[0.04] border border-dashed border-white/15 p-3.5 text-left">
-                <p className="text-[11px] font-semibold text-white/70">
-                  ⚙️ Creem Integration Ready:
-                </p>
-                <p className="text-[10px] text-white/50 mt-1 leading-relaxed">
-                  Provide your Creem checkout link or API key in <code className="text-[#FF8C42]">.env.local</code> as <code className="text-[#FF8C42]">NEXT_PUBLIC_CREEM_CHECKOUT_URL</code> or <code className="text-[#FF8C42]">CREEM_API_KEY</code>.
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
-        {/* Skip to studio link for convenience during setup */}
-        <div className="mt-12 text-center">
-          <Link
-            href="/dashboard/studio"
-            className="text-xs text-white/40 hover:text-white/80 transition underline underline-offset-4"
+        {/* Back and Cancel Actions (Bypassing workspace preview link removed) */}
+        <div className="mt-12 flex items-center justify-center gap-6 text-xs text-white/50">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="flex items-center gap-1.5 text-white/60 hover:text-white transition cursor-pointer"
           >
-            Explore workspace preview without checkout →
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to previous step</span>
+          </button>
+          <span className="text-white/20">•</span>
+          <Link
+            href="/"
+            className="text-white/60 hover:text-white transition cursor-pointer"
+          >
+            Cancel checkout & return home
           </Link>
         </div>
       </main>
