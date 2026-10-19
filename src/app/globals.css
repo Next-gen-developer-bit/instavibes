@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-geist: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  /* Colors — available as Tailwind utilities like bg-background, text-text, etc. */
+  --color-background: #FAFAF9;
+  --color-surface: #F3F3F1;
+  --color-text: #121211;
+  --color-muted: #51515A;
+  --color-border: rgba(0, 0, 0, 0.09);
+  --color-accent: #FF5A4E;
+  --color-accent-2: #FF8C42;
+  --color-button: #121211;
+  --color-white: #ffffff;
+}
+
+/*
+ * All custom CSS lives in Tailwind's layers so that @layer utilities always
+ * win. An unlayered custom rule outranks @layer utilities and overrides
+ * Tailwind's logical margin/padding utilities (mx-auto, px-*, pl-*, pr-*),
+ * which silently breaks centering and horizontal padding. Layering fixes
+ * that class of bug.
+ */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-geist);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Form input */
+  .input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.12);
+    background: white;
+    font-size: 15px;
+    color: var(--color-text);
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: var(--font-geist);
+  }
+  .input:focus {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(255, 90, 78, 0.12);
+  }
+  .input::placeholder {
+    color: var(--color-muted);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--color-button);
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px 28px;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+
+  .btn-accent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px 28px;
+    transition: opacity 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    box-shadow: 0 10px 30px rgba(255, 90, 78, 0.30);
+  }
+  .btn-accent:hover { opacity: 0.88; }
+
+  /* Dashboard sidebar link */
+  .sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+  .sidebar-link:hover {
+    background: rgba(0,0,0,0.04);
+    color: var(--color-text);
+  }
+  .sidebar-link.active {
+    background: rgba(255, 90, 78, 0.08);
+    color: var(--color-accent);
+  }
+}
+
+@layer utilities {
+  /* Hairline border utility */
+  .hairline {
+    border: 1px solid rgba(0, 0, 0, 0.09);
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(135deg, #FF5A4E 0%, #FF8C42 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Scrollbar hide */
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.pulse { animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
