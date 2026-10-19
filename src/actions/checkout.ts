@@ -34,7 +34,7 @@ export async function createCreemCheckoutSession(
 
     const appUrl = getAppUrl()
     const successUrl = `${appUrl}/checkout/success`
-    const cancelUrl = `${appUrl}/checkout`
+    const cancelUrl = `${appUrl}/onboarding?canceled=true`
     const config = getCreemConfig()
 
     // 1. If Creem API key is provided, attempt programmatic session creation
@@ -89,7 +89,7 @@ export async function createCreemCheckoutSession(
     if (!checkoutUrl) {
       return {
         error:
-          'Creem payment link is currently being configured or is under review in Creem. Once ready, add your Creem checkout link to NEXT_PUBLIC_CREEM_CHECKOUT_URL in Vercel.',
+          'Payment gateway is currently pending verification. Please try again in a few moments or contact support.',
       }
     }
 

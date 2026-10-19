@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -17,7 +17,9 @@ import {
   User,
   Calendar,
   Rocket,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  RotateCw
 } from 'lucide-react'
 import { completeOnboarding } from '@/actions/onboarding'
 import { signOut } from '@/actions/auth'
@@ -108,6 +110,17 @@ export default function OnboardingPage() {
   const [subStep1, setSubStep1] = useState<'hook' | 'handle' | 'analyzing'>('hook')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [checkoutCanceled, setCheckoutCanceled] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('canceled') === 'true') {
+        setCheckoutCanceled(true)
+        setCurrentStep(5)
+      }
+    }
+  }, [])
 
   // Form State
   const [handle, setHandle] = useState('')
@@ -202,7 +215,7 @@ export default function OnboardingPage() {
                 <div key={s.id} className="relative z-10 flex items-start gap-3.5">
                   <div className="shrink-0 mt-0.5">
                     {isPassed ? (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FF5A36] text-white shadow-sm">
                         <Check className="h-3.5 w-3.5 stroke-[3]" />
                       </div>
                     ) : isCurrent ? (
@@ -794,95 +807,145 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* STEP 5: LAUNCH WORKSPACE */}
+        {/* STEP 5: LAUNCH WORKSPACE OR CHECKOUT CANCELLED */}
         {currentStep === 5 && (
           <div className="relative z-10 w-full max-w-xl text-center animate-in fade-in zoom-in-95 duration-300">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#FF5A36]/10 px-3.5 py-1 text-xs font-bold text-[#FF5A36] mb-4">
-              <Sparkles className="h-3.5 w-3.5" />
-              Content Brain Ready
-            </div>
+            {checkoutCanceled ? (
+              <div className="flex flex-col items-center">
+                <p className="text-sm font-semibold text-[#FF5A36] mb-8">
+                  Step 5 of 5
+                </p>
 
-            <h2 className="text-3xl font-extrabold tracking-tight text-[#111827]">
-              Your Creator Blueprint is Live
-            </h2>
-            <p className="mt-2 text-sm text-[#6B7280] max-w-md mx-auto">
-              We configured your AI script engine with your authentic tone, audience hook patterns, and core pillars.
-            </p>
-
-            {/* Blueprint Summary Card */}
-            <div className="mt-8 rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm text-left space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Creator Profile</p>
-                  <p className="text-sm font-bold text-[#111827]">@{handle || 'creator'}</p>
+                {/* Cancel X Icon Container */}
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#F3F4F6] border border-gray-100 text-[#4B5563] mb-6 shadow-sm">
+                  <X className="h-7 w-7 stroke-[2.5]" />
                 </div>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-600">
-                  Ready to script
-                </span>
+
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#111827]">
+                  Checkout cancelled
+                </h2>
+                <p className="mt-3 text-sm sm:text-base text-[#6B7280] max-w-md leading-relaxed">
+                  No problem. Nothing was charged and your trial hasn&apos;t started. Everything you&apos;ve set up is saved.
+                </p>
+
+                <div className="mt-8">
+                  <button
+                    onClick={() => router.push('/checkout')}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#111827] px-8 py-3.5 text-sm font-bold text-white shadow-md hover:bg-black transition cursor-pointer"
+                  >
+                    <RotateCw className="h-4 w-4" />
+                    <span>Try again</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCheckoutCanceled(false)}
+                  className="mt-4 text-xs sm:text-sm font-semibold text-[#4B5563] hover:text-[#111827] transition underline underline-offset-4 cursor-pointer"
+                >
+                  Choose a different plan
+                </button>
+
+                <p className="mt-10 text-xs text-[#9CA3AF]">
+                  Need help?{' '}
+                  <a
+                    href="mailto:support@instavibes.com"
+                    className="font-semibold text-[#111827] hover:underline"
+                  >
+                    support@instavibes.com
+                  </a>
+                </p>
               </div>
+            ) : (
+              <>
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#FF5A36]/10 px-3.5 py-1 text-xs font-bold text-[#FF5A36] mb-4">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Content Brain Ready
+                </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div>
-                  <p className="text-[#9CA3AF] font-medium">Tone & Voice</p>
-                  <p className="font-semibold text-[#111827] mt-0.5">{tones.join(', ')}</p>
-                </div>
-                <div>
-                  <p className="text-[#9CA3AF] font-medium">Language</p>
-                  <p className="font-semibold text-[#111827] mt-0.5 capitalize">{language}</p>
-                </div>
-                <div>
-                  <p className="text-[#9CA3AF] font-medium">Target Audience</p>
-                  <p className="font-semibold text-[#111827] mt-0.5">{audience}</p>
-                </div>
-                <div>
-                  <p className="text-[#9CA3AF] font-medium">Main Offering</p>
-                  <p className="font-semibold text-[#111827] mt-0.5">{offers}</p>
-                </div>
-              </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-[#111827]">
+                  Your Creator Blueprint is Live
+                </h2>
+                <p className="mt-2 text-sm text-[#6B7280] max-w-md mx-auto">
+                  We configured your AI script engine with your authentic tone, audience hook patterns, and core pillars.
+                </p>
 
-              <div className="pt-2 border-t border-[#F3F4F6]">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1.5">Core Content Pillars</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {topics.map((tp) => (
-                    <span key={tp} className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#4B5563]">
-                      #{tp}
+                {/* Blueprint Summary Card */}
+                <div className="mt-8 rounded-2xl border border-[#E5E7EB] bg-white p-6 shadow-sm text-left space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F3F4F6]">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Creator Profile</p>
+                      <p className="text-sm font-bold text-[#111827]">@{handle || 'creator'}</p>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-600">
+                      Ready to script
                     </span>
-                  ))}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <p className="text-[#9CA3AF] font-medium">Tone & Voice</p>
+                      <p className="font-semibold text-[#111827] mt-0.5">{tones.join(', ')}</p>
+                    </div>
+                    <div>
+                      <p className="text-[#9CA3AF] font-medium">Language</p>
+                      <p className="font-semibold text-[#111827] mt-0.5 capitalize">{language}</p>
+                    </div>
+                    <div>
+                      <p className="text-[#9CA3AF] font-medium">Target Audience</p>
+                      <p className="font-semibold text-[#111827] mt-0.5">{audience}</p>
+                    </div>
+                    <div>
+                      <p className="text-[#9CA3AF] font-medium">Main Offering</p>
+                      <p className="font-semibold text-[#111827] mt-0.5">{offers}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#F3F4F6]">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1.5">Core Content Pillars</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {topics.map((tp) => (
+                        <span key={tp} className="rounded-md bg-[#F3F4F6] px-2 py-0.5 text-[11px] font-medium text-[#4B5563]">
+                          #{tp}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {error && (
-              <p className="mt-4 text-xs font-semibold text-red-500">{error}</p>
-            )}
-
-            {/* Launch CTA */}
-            <div className="mt-8 flex items-center justify-center gap-4">
-              <button
-                onClick={() => setCurrentStep(4)}
-                disabled={isSubmitting}
-                className="px-5 py-2.5 text-sm font-semibold text-[#6B7280] hover:text-[#111827] transition"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleFinish}
-                disabled={isSubmitting}
-                className="rounded-xl bg-[#111827] px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-black disabled:opacity-50 flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Launching workspace…
-                  </>
-                ) : (
-                  <>
-                    Launch my workspace
-                    <Rocket className="h-4 w-4 text-[#FF5A36]" />
-                  </>
+                {error && (
+                  <p className="mt-4 text-xs font-semibold text-red-500">{error}</p>
                 )}
-              </button>
-            </div>
+
+                {/* Launch CTA */}
+                <div className="mt-8 flex items-center justify-center gap-4">
+                  <button
+                    onClick={() => setCurrentStep(4)}
+                    disabled={isSubmitting}
+                    className="px-5 py-2.5 text-sm font-semibold text-[#6B7280] hover:text-[#111827] transition"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleFinish}
+                    disabled={isSubmitting}
+                    className="rounded-xl bg-[#111827] px-8 py-3.5 text-sm font-bold text-white shadow-lg transition hover:bg-black disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Launching workspace…
+                      </>
+                    ) : (
+                      <>
+                        Launch my workspace
+                        <Rocket className="h-4 w-4 text-[#FF5A36]" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </main>

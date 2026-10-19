@@ -41,21 +41,7 @@ export default function CheckoutClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isConfigured = Boolean(
-    defaultCreemUrl &&
-      defaultCreemUrl.trim() !== '' &&
-      !defaultCreemUrl.includes('placeholder') &&
-      defaultCreemUrl !== 'https://checkout.creem.io'
-  )
-
   const handleStartCheckout = async () => {
-    if (!isConfigured) {
-      setError(
-        'Creem checkout link is not configured yet or is currently under review in Creem. Once approved, add your Creem checkout link to NEXT_PUBLIC_CREEM_CHECKOUT_URL in Vercel.'
-      )
-      return
-    }
-
     setLoading(true)
     setError(null)
 
@@ -99,19 +85,18 @@ export default function CheckoutClient({
           </span>
         </div>
 
-        {/* Back and Cancel Navigation */}
+        {/* Back and Cancel Navigation -> Always returns to onboarding */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => router.back()}
+          <Link
+            href="/onboarding"
             className="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition px-3 py-1.5 rounded-xl border border-white/10 hover:bg-white/5 cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             <span>Back</span>
-          </button>
+          </Link>
 
           <Link
-            href="/"
+            href="/onboarding?canceled=true"
             className="text-xs font-semibold text-white/50 hover:text-white transition px-3 py-1.5 rounded-xl border border-transparent hover:border-white/10 hover:bg-white/5 cursor-pointer"
           >
             Cancel
@@ -297,26 +282,16 @@ export default function CheckoutClient({
               <span className="text-2xl text-emerald-400 font-black">$0.00</span>
             </div>
 
-            {error ? (
+            {error && (
               <div className="mt-4 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-400 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                 <span className="leading-relaxed">{error}</span>
               </div>
-            ) : !isConfigured ? (
-              <div className="mt-4 rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-left space-y-1">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
-                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span>Creem Product Setup Pending</span>
-                </div>
-                <p className="text-[11px] text-amber-300/80 leading-relaxed">
-                  Your checkout link is not set yet or is currently under review in Creem. Once your product link is generated in Creem, add it to <code className="text-white bg-black/40 px-1 py-0.5 rounded font-mono text-[10px]">NEXT_PUBLIC_CREEM_CHECKOUT_URL</code> in Vercel to activate live checkout.
-                </p>
-              </div>
-            ) : null}
+            )}
 
             <button
               onClick={handleStartCheckout}
-              disabled={loading || !isConfigured}
+              disabled={loading}
               className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#FF5A36] to-[#FF8C42] px-6 py-4 text-sm sm:text-base font-extrabold text-white shadow-xl shadow-[#FF5A36]/25 transition hover:brightness-110 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
@@ -324,8 +299,6 @@ export default function CheckoutClient({
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Connecting to Checkout…</span>
                 </>
-              ) : !isConfigured ? (
-                <span>Checkout Pending Creem Approval</span>
               ) : (
                 <>
                   <span>Start 3-Day Free Trial</span>
@@ -340,22 +313,21 @@ export default function CheckoutClient({
           </div>
         </div>
 
-        {/* Back and Cancel Actions (Bypassing workspace preview link removed) */}
+        {/* Back and Cancel Actions -> Always returns to onboarding */}
         <div className="mt-12 flex items-center justify-center gap-6 text-xs text-white/50">
-          <button
-            type="button"
-            onClick={() => router.back()}
+          <Link
+            href="/onboarding"
             className="flex items-center gap-1.5 text-white/60 hover:text-white transition cursor-pointer"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to previous step</span>
-          </button>
+            <span>Back to onboarding</span>
+          </Link>
           <span className="text-white/20">•</span>
           <Link
-            href="/"
+            href="/onboarding?canceled=true"
             className="text-white/60 hover:text-white transition cursor-pointer"
           >
-            Cancel checkout & return home
+            Cancel checkout
           </Link>
         </div>
       </main>
