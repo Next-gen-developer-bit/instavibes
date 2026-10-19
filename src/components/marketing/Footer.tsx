@@ -52,9 +52,11 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-[var(--color-border)] pt-6 sm:flex-row">
-          <span className="text-xs font-medium text-[var(--color-muted)]">
-            © {new Date().getFullYear()} instavibes. All rights reserved.
-          </span>
+          <div className="flex flex-col sm:flex-row items-center gap-2 text-xs font-medium text-[var(--color-muted)]">
+            <span>© {new Date().getFullYear()} instavibes. All rights reserved.</span>
+            <span className="hidden sm:inline">•</span>
+            <span>Payments securely processed by Creem (Merchant of Record).</span>
+          </div>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             {LINKS.map((l) => (
               <Link
@@ -65,12 +67,6 @@ export default function Footer() {
                 {l.label}
               </Link>
             ))}
-            <a
-              href="mailto:instavibesai@gmail.com"
-              className="text-xs font-semibold text-[var(--color-text)] transition hover:opacity-70"
-            >
-
-            </a>
           </div>
         </div>
       </div>

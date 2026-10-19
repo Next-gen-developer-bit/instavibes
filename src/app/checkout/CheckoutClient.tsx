@@ -333,8 +333,17 @@ export default function CheckoutClient({
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/8 px-6 py-4 text-center text-xs text-white/40">
-        © {new Date().getFullYear()} InstaVibes. All rights reserved. • Powered by Creem Merchant of Record.
+      <footer className="border-t border-white/8 px-6 py-6 text-center text-xs text-white/40 space-y-2.5">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-white/60">
+          <Link href="/terms" target="_blank" className="hover:text-white transition">Terms of Service</Link>
+          <span>•</span>
+          <Link href="/privacy" target="_blank" className="hover:text-white transition">Privacy Policy</Link>
+          <span>•</span>
+          <Link href="/terms#refunds" target="_blank" className="hover:text-white transition">Refunds</Link>
+          <span>•</span>
+          <Link href="/contact" target="_blank" className="hover:text-white transition">Contact</Link>
+        </div>
+        <p>© {new Date().getFullYear()} InstaVibes. All rights reserved. • Payments securely processed by Creem (Merchant of Record).</p>
       </footer>
     </div>
   )

@@ -47,7 +47,7 @@ export default function SignUpPage() {
           Start creating, free
         </h1>
         <p className="mt-1.5 text-sm text-[var(--color-muted)]">
-          Join thousands of creators growing on Instagram
+          Generate authentic reel scripts and scale your audience
         </p>
       </div>
 

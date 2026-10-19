@@ -30,7 +30,7 @@ export default function FinalCTA() {
           Never run out of what to post.
         </h2>
         <p className="mt-5 text-lg text-[var(--color-muted)]">
-          Join 2,400+ creators building on Instagram with instavibes. Start your free 3-day trial today.
+          Craft viral Instagram reel scripts calibrated to your unique voice. Start your free 3-day trial today.
         </p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link

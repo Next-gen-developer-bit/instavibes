@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { Eye, Heart, Instagram, ArrowRight } from 'lucide-react'
+import { Instagram, ArrowRight, Sparkles } from 'lucide-react'
 
-const METRICS = [
-  { Icon: Instagram, color: '#E1306C', label: 'Viral Reel', views: '1.2M', likes: '42.8K' },
-  { Icon: Instagram, color: '#E1306C', label: 'Trending Audio', views: '840K', likes: '31.2K' },
-  { Icon: Instagram, color: '#E1306C', label: 'Hook Template', views: '590K', likes: '24.6K' },
+const HIGHLIGHTS = [
+  { label: 'Hook Breakdown', desc: 'Deconstruct winning reels' },
+  { label: 'Voice Matching', desc: 'Calibrated to your cadence' },
+  { label: 'Script Studio', desc: 'Camera-ready teleprompter scripts' },
 ]
 
 const AVATARS = [
@@ -98,7 +98,7 @@ export default function Hero() {
             ))}
           </div>
           <p className="text-sm text-[var(--color-muted)]">
-            <span className="font-semibold text-[var(--color-text)]">2,400+</span> creators growing with instavibes
+            <span className="font-semibold text-[var(--color-text)]">AI Script Studio</span> built for Instagram creators
           </p>
         </div>
 
@@ -116,26 +116,26 @@ export default function Hero() {
 
         {/* Phone mockup */}
         <div className="relative mx-auto mt-16 max-w-xs sm:max-w-sm">
-          {/* Desktop metric cards */}
-          {METRICS.map((m, i) => (
+          {/* Desktop feature highlights */}
+          {HIGHLIGHTS.map((h, i) => (
             <div
-              key={m.label}
+              key={h.label}
               className="absolute hidden items-center gap-3 rounded-2xl border border-black/8 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm lg:flex"
               style={{
-                left: i % 2 === 0 ? -140 : undefined,
-                right: i % 2 === 1 ? -140 : undefined,
+                left: i % 2 === 0 ? -150 : undefined,
+                right: i % 2 === 1 ? -150 : undefined,
                 top: `${20 + i * 28}%`,
               }}
             >
-              <m.Icon className="h-8 w-8 shrink-0" style={{ color: m.color }} />
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E1306C]/10 text-[#E1306C]">
+                <Instagram className="h-5 w-5" />
+              </div>
               <div className="flex flex-col gap-0.5">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text)]">
-                  <Eye className="h-3 w-3 text-[var(--color-muted)]" />
-                  {m.views} views
+                <span className="text-xs font-bold text-[var(--color-text)]">
+                  {h.label}
                 </span>
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text)]">
-                  <Heart className="h-3 w-3 text-[var(--color-muted)]" />
-                  {m.likes} likes
+                <span className="text-[11px] font-medium text-[var(--color-muted)]">
+                  {h.desc}
                 </span>
               </div>
             </div>
@@ -193,30 +193,23 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Mobile metric chips */}
+          {/* Mobile feature highlights */}
           <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center gap-2 lg:hidden">
-            {METRICS.map((m) => (
+            {HIGHLIGHTS.map((h) => (
               <div
-                key={m.label}
+                key={h.label}
                 className="flex items-center gap-2 rounded-xl border border-black/8 bg-white/90 px-3 py-2 shadow-sm backdrop-blur-sm"
               >
-                <m.Icon className="h-5 w-5 shrink-0" style={{ color: m.color }} />
-                <div className="flex flex-col">
-                  <span className="flex items-center gap-1 text-[11px] font-semibold text-[var(--color-text)]">
-                    <Eye className="h-2.5 w-2.5 text-[var(--color-muted)]" />
-                    {m.views}
-                  </span>
-                  <span className="flex items-center gap-1 text-[11px] text-[var(--color-muted)]">
-                    <Heart className="h-2.5 w-2.5 text-[var(--color-muted)]" />
-                    {m.likes}
-                  </span>
-                </div>
+                <Instagram className="h-4 w-4 shrink-0 text-[#E1306C]" />
+                <span className="text-[11px] font-semibold text-[var(--color-text)]">
+                  {h.label}
+                </span>
               </div>
             ))}
           </div>
 
-          <p className="mt-4 text-center text-sm text-[var(--color-muted)]">
-            50M+ views, 10M+ likes and counting
+          <p className="mt-4 text-center text-xs sm:text-sm text-[var(--color-muted)]">
+            Break down winning hook structures and write original scripts in your authentic voice.
           </p>
         </div>
       </div>
