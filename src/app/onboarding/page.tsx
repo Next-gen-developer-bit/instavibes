@@ -838,23 +838,6 @@ export default function OnboardingPage() {
                   </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setCheckoutCanceled(false)}
-                  className="mt-4 text-xs sm:text-sm font-semibold text-[#4B5563] hover:text-[#111827] transition underline underline-offset-4 cursor-pointer"
-                >
-                  Choose a different plan
-                </button>
-
-                <p className="mt-10 text-xs text-[#9CA3AF]">
-                  Need help?{' '}
-                  <a
-                    href="mailto:support@instavibes.com"
-                    className="font-semibold text-[#111827] hover:underline"
-                  >
-                    support@instavibes.com
-                  </a>
-                </p>
               </div>
             ) : (
               <>
