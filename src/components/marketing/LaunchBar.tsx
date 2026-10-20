@@ -33,6 +33,7 @@ export default function LaunchBar() {
       className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-2 px-4 text-sm"
       style={{
         height: 44,
+        minHeight: 44,
         borderBottom: '1px solid rgba(255,255,255,0.4)',
         background: 'rgba(255,255,255,0.72)',
         backdropFilter: 'blur(12px)',

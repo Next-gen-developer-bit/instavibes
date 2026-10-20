@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Suspense } from 'react'
 import { Zap } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,7 +26,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Card */}
       <div className="relative z-10 w-full max-w-md">
-        {children}
+        <Suspense fallback={null}>{children}</Suspense>
       </div>
     </div>
   )

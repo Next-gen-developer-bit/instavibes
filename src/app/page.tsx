@@ -1,11 +1,13 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { marketingViewer } from '@/lib/access'
 import Navbar from '@/components/marketing/Navbar'
 import LaunchBar from '@/components/marketing/LaunchBar'
 import Hero from '@/components/marketing/Hero'
 import HowItWorks from '@/components/marketing/HowItWorks'
 import FeaturesGrid from '@/components/marketing/FeaturesGrid'
 import Pricing from '@/components/marketing/Pricing'
+import NativeLanguage from '@/components/marketing/NativeLanguage'
 import FAQ from '@/components/marketing/FAQ'
 import FinalCTA from '@/components/marketing/FinalCTA'
 import Footer from '@/components/marketing/Footer'
@@ -22,28 +24,41 @@ export default async function HomePage(props: HomePageProps) {
     redirect(`/auth/callback?code=${encodeURIComponent(searchParams.code)}`)
   }
 
-  // 2. If user is logged in, show dashboard only
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  let onboardingCompleted = false
+  let subscription: { status: string | null; stripe_subscription_id: string | null } | null = null
+
   if (user) {
-    redirect('/dashboard')
+    const [{ data: profile }, { data: sub }] = await Promise.all([
+      supabase.from('profiles').select('onboarding_completed').eq('id', user.id).maybeSingle(),
+      supabase.from('subscriptions').select('status, stripe_subscription_id').eq('user_id', user.id).maybeSingle(),
+    ])
+    onboardingCompleted = Boolean(profile?.onboarding_completed)
+    subscription = sub
   }
 
-  // 3. Logged-out users see public landing page
+  const viewer = marketingViewer({
+    userId: user?.id,
+    onboardingCompleted,
+    subscription,
+  })
+
   return (
     <>
       <LaunchBar />
-      <Navbar />
+      <Navbar viewer={viewer} />
       <main>
-        <Hero />
+        <Hero viewer={viewer} />
         <HowItWorks />
         <FeaturesGrid />
-        <Pricing />
+        <NativeLanguage />
+        <Pricing viewer={viewer} />
         <FAQ />
-        <FinalCTA />
+        <FinalCTA viewer={viewer} />
       </main>
       <Footer />
     </>

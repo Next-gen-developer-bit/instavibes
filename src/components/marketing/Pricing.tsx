@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Check, Brain, Clapperboard, Sparkles, CalendarDays, Languages } from 'lucide-react'
+import type { MarketingViewer } from '@/lib/access'
 
 const LAUNCH_END = new Date('2026-11-06T23:59:59+05:30')
 
@@ -75,7 +76,7 @@ const FEATURES = [
   },
 ]
 
-export default function Pricing() {
+export default function Pricing({ viewer }: { viewer: MarketingViewer }) {
   const [annual, setAnnual] = useState(false)
 
   return (
@@ -143,10 +144,10 @@ export default function Pricing() {
             </div>
             <div className="relative mt-auto pt-10">
               <Link
-                href="/sign-up"
+                href={viewer.isLoggedIn ? viewer.appHref : '/sign-up'}
                 className="flex items-center justify-center rounded-full bg-[var(--color-accent)] px-6 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Start your 3-day free trial
+                {viewer.isLoggedIn ? viewer.appLabel : 'Start your 3-day free trial'}
               </Link>
               <p className="mt-3 text-center text-xs text-white/50">Zero risk for 3 days · Cancel in one click</p>
             </div>

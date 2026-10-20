@@ -1,15 +1,14 @@
 /**
  * Creem Merchant of Record & Payment Gateway Configuration
- * https://creem.io
+ * https://docs.creem.io/api-reference/endpoint/create-checkout
  *
- * Configurable via environment variables:
- * - NEXT_PUBLIC_CREEM_CHECKOUT_URL: Direct Creem checkout link (fallback or primary)
- * - NEXT_PUBLIC_CREEM_CHECKOUT_URL_MONTHLY: Specific monthly checkout link
- * - NEXT_PUBLIC_CREEM_CHECKOUT_URL_ANNUAL: Specific annual checkout link
- * - CREEM_API_KEY: Secret API key for server-side Creem API session generation
- * - CREEM_PRODUCT_ID_MONTHLY: Creem Product ID for Monthly subscription ($10/mo)
- * - CREEM_PRODUCT_ID_ANNUAL: Creem Product ID for Annual subscription ($100/yr)
- * - CREEM_WEBHOOK_SECRET: Secret key to verify inbound Creem webhooks
+ * Env vars (any of these work):
+ * - CREEM_API_KEY
+ * - CREEM_PRODUCT_ID  (single approved product — used for both intervals if specific ones are unset)
+ * - CREEM_PRODUCT_ID_MONTHLY / CREEM_PRODUCT_ID_ANNUAL
+ * - NEXT_PUBLIC_CREEM_CHECKOUT_URL  (full hosted URL, or a raw prod_xxx id)
+ * - CREEM_API_URL  (optional; otherwise inferred from the API key)
+ * - CREEM_WEBHOOK_SECRET
  */
 
 export interface CreemCheckoutOptions {
@@ -20,76 +19,123 @@ export interface CreemCheckoutOptions {
   cancelUrl?: string
 }
 
+function env(...keys: string[]): string {
+  for (const key of keys) {
+    const value = process.env[key]?.trim()
+    if (value) return value
+  }
+  return ''
+}
+
+function isPlaceholder(value: string) {
+  const v = value.trim().toLowerCase()
+  return (
+    !v ||
+    v.includes('placeholder') ||
+    v.includes('your-product') ||
+    v.includes('prod_monthly_instavibes') ||
+    v.includes('prod_annual_instavibes') ||
+    v === 'https://checkout.creem.io'
+  )
+}
+
+function extractProductId(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed || isPlaceholder(trimmed)) return ''
+
+  if (/^prod_[A-Za-z0-9]+$/.test(trimmed)) return trimmed
+
+  try {
+    const url = new URL(trimmed)
+    const parts = url.pathname.split('/').filter(Boolean)
+    const fromPath = parts.find((p) => p.startsWith('prod_'))
+    if (fromPath) return fromPath
+  } catch {
+    // not a URL
+  }
+
+  return trimmed.startsWith('prod_') ? trimmed : ''
+}
+
+function hostedPaymentUrl(productId: string, testMode: boolean) {
+  if (!productId) return ''
+  const host = testMode ? 'https://www.creem.io/test/payment' : 'https://www.creem.io/payment'
+  return `${host}/${productId}`
+}
+
 export function getCreemConfig() {
-  const defaultCheckout =
-    process.env.NEXT_PUBLIC_CREEM_CHECKOUT_URL ||
-    process.env.CREEM_CHECKOUT_URL ||
-    ''
+  const apiKey = env('CREEM_API_KEY')
+  const testMode =
+    apiKey.toLowerCase().includes('test') ||
+    env('CREEM_API_URL').includes('test-api.creem.io')
 
-  const monthlyCheckout =
-    process.env.NEXT_PUBLIC_CREEM_CHECKOUT_URL_MONTHLY ||
-    defaultCheckout
+  const apiBase =
+    env('CREEM_API_URL') ||
+    (testMode ? 'https://test-api.creem.io' : 'https://api.creem.io')
 
-  const annualCheckout =
-    process.env.NEXT_PUBLIC_CREEM_CHECKOUT_URL_ANNUAL ||
-    defaultCheckout
+  const singleProductId = extractProductId(
+    env('CREEM_PRODUCT_ID', 'NEXT_PUBLIC_CREEM_PRODUCT_ID', 'NEXT_PUBLIC_CREEM_CHECKOUT_URL')
+  )
+  const monthlyProductId =
+    extractProductId(env('CREEM_PRODUCT_ID_MONTHLY', 'NEXT_PUBLIC_CREEM_PRODUCT_ID_MONTHLY')) ||
+    singleProductId
+  const annualProductId =
+    extractProductId(env('CREEM_PRODUCT_ID_ANNUAL', 'NEXT_PUBLIC_CREEM_PRODUCT_ID_ANNUAL')) ||
+    singleProductId
+
+  const defaultCheckoutRaw = env(
+    'NEXT_PUBLIC_CREEM_CHECKOUT_URL',
+    'CREEM_CHECKOUT_URL'
+  )
+  const monthlyCheckoutRaw = env('NEXT_PUBLIC_CREEM_CHECKOUT_URL_MONTHLY') || defaultCheckoutRaw
+  const annualCheckoutRaw = env('NEXT_PUBLIC_CREEM_CHECKOUT_URL_ANNUAL') || defaultCheckoutRaw
+
+  const resolveCheckoutUrl = (raw: string, productId: string) => {
+    if (raw && !isPlaceholder(raw) && raw.startsWith('http')) return raw
+    const idFromRaw = extractProductId(raw)
+    return hostedPaymentUrl(idFromRaw || productId, testMode)
+  }
 
   return {
-    apiKey: process.env.CREEM_API_KEY,
-    webhookSecret: process.env.CREEM_WEBHOOK_SECRET,
-    monthlyProductId: process.env.CREEM_PRODUCT_ID_MONTHLY || 'prod_monthly_instavibes',
-    annualProductId: process.env.CREEM_PRODUCT_ID_ANNUAL || 'prod_annual_instavibes',
-    monthlyCheckoutUrl: monthlyCheckout,
-    annualCheckoutUrl: annualCheckout,
-    defaultCheckoutUrl: defaultCheckout,
+    apiKey,
+    testMode,
+    apiBase,
+    webhookSecret: env('CREEM_WEBHOOK_SECRET'),
+    monthlyProductId,
+    annualProductId,
+    monthlyCheckoutUrl: resolveCheckoutUrl(monthlyCheckoutRaw, monthlyProductId),
+    annualCheckoutUrl: resolveCheckoutUrl(annualCheckoutRaw, annualProductId),
+    defaultCheckoutUrl: resolveCheckoutUrl(defaultCheckoutRaw, monthlyProductId),
+    isConfigured: Boolean(apiKey && (monthlyProductId || annualProductId)) ||
+      Boolean(resolveCheckoutUrl(defaultCheckoutRaw, monthlyProductId)),
   }
 }
 
 /**
- * Builds a ready-to-redirect Creem checkout URL with customer metadata prefilled.
+ * Builds a ready-to-redirect Creem hosted payment URL with customer metadata.
  */
 export function buildCreemCheckoutUrl(options: CreemCheckoutOptions = {}): string | null {
   const config = getCreemConfig()
-  const baseUrl = options.billingInterval === 'year'
-    ? config.annualCheckoutUrl
-    : config.monthlyCheckoutUrl
+  const baseUrl =
+    options.billingInterval === 'year'
+      ? config.annualCheckoutUrl
+      : config.monthlyCheckoutUrl
 
-  if (
-    !baseUrl ||
-    baseUrl.trim() === '' ||
-    baseUrl === 'https://checkout.creem.io' ||
-    baseUrl.includes('placeholder')
-  ) {
-    return null
-  }
+  if (!baseUrl || isPlaceholder(baseUrl)) return null
 
   try {
     const url = new URL(baseUrl)
     if (options.userEmail) {
       url.searchParams.set('email', options.userEmail)
-      url.searchParams.set('customer_email', options.userEmail)
     }
     if (options.userId) {
       url.searchParams.set('client_reference_id', options.userId)
-      url.searchParams.set('user_id', options.userId)
-      url.searchParams.set('metadata[user_id]', options.userId)
-    }
-    if (options.billingInterval) {
-      url.searchParams.set('interval', options.billingInterval)
     }
     if (options.successUrl) {
       url.searchParams.set('success_url', options.successUrl)
     }
-    if (options.cancelUrl) {
-      url.searchParams.set('cancel_url', options.cancelUrl)
-    }
     return url.toString()
   } catch {
-    // If baseUrl is a relative path or raw placeholder
-    const separator = baseUrl.includes('?') ? '&' : '?'
-    const params = new URLSearchParams()
-    if (options.userEmail) params.set('email', options.userEmail)
-    if (options.userId) params.set('userId', options.userId)
-    return `${baseUrl}${separator}${params.toString()}`
+    return baseUrl
   }
 }

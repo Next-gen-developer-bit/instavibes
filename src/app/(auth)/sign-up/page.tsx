@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Mail, Lock, User, Chrome, Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react'
 import { signUpWithPassword, signInWithGoogle } from '@/actions/auth'
 
@@ -12,6 +13,8 @@ const PERKS = [
 ]
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/onboarding'
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -21,6 +24,7 @@ export default function SignUpPage() {
     e.preventDefault()
     setError(null)
     const fd = new FormData(e.currentTarget)
+    fd.set('redirectTo', redirectTo)
     if ((fd.get('password') as string).length < 8) {
       setError('Password must be at least 8 characters')
       return
@@ -34,7 +38,7 @@ export default function SignUpPage() {
   function handleGoogle() {
     setError(null)
     startGoogleTransition(async () => {
-      const result = await signInWithGoogle()
+      const result = await signInWithGoogle(redirectTo)
       if (result?.error) setError(result.error)
     })
   }
@@ -84,6 +88,7 @@ export default function SignUpPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        <input type="hidden" name="redirectTo" value={redirectTo} />
         {/* Name */}
         <div>
           <label htmlFor="signup-name" className="mb-1.5 block text-xs font-semibold text-[var(--color-text)]">

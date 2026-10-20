@@ -9,7 +9,11 @@ export const metadata = {
   description: 'Your trial has been activated successfully.',
 }
 
-export default async function CheckoutSuccessPage() {
+export default async function CheckoutSuccessPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -19,22 +23,26 @@ export default async function CheckoutSuccessPage() {
     redirect('/login')
   }
 
-  // Ensure subscription record is active/trialing in Supabase
-  try {
-    const admin = createAdminClient()
-    const { data: existingSub } = await admin
-      .from('subscriptions')
-      .select('id, status')
-      .eq('user_id', user.id)
-      .maybeSingle()
+  const params = searchParams ? await searchParams : {}
+  const one = (key: string) => {
+    const value = params[key]
+    return typeof value === 'string' && value.trim() ? value.trim() : null
+  }
+  const subscriptionId = one('subscription_id') || one('checkout_id')
+  const customerId = one('customer_id')
 
-    if (!existingSub || existingSub.status !== 'active') {
+  // Only a return from Creem (subscription or checkout id) counts as paid.
+  if (subscriptionId) {
+    try {
+      const admin = createAdminClient()
       const trialEnd = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
       const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
       await admin.from('subscriptions').upsert(
         {
           user_id: user.id,
+          stripe_subscription_id: subscriptionId,
+          stripe_customer_id: customerId,
           status: 'trialing',
           billing_interval: 'month',
           trial_end: trialEnd,
@@ -43,9 +51,9 @@ export default async function CheckoutSuccessPage() {
         },
         { onConflict: 'user_id' }
       )
+    } catch (err) {
+      console.error('Error confirming subscription in success page:', err)
     }
-  } catch (err) {
-    console.error('Error confirming subscription in success page:', err)
   }
 
   return (

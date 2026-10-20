@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { rateLimits, getClientIp } from '@/lib/security/rate-limit'
+import { hasPaidAccess } from '@/lib/access'
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -13,7 +14,8 @@ export async function middleware(request: NextRequest) {
     pathname === '/forgot-password' ||
     pathname === '/reset-password'
 
-  if (isAuthRoute) {
+  // Only throttle non-GET auth traffic so the login page itself always renders.
+  if (isAuthRoute && request.method !== 'GET') {
     const rateCheck = rateLimits.checkAuthPage(ip)
     if (!rateCheck.success) {
       return new NextResponse(
@@ -119,14 +121,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // 5. Redirect authenticated users away from landing page (/) and auth pages (/login, /sign-up)
-  if (
-    user &&
-    (pathname === '/' ||
-      pathname === '/login' ||
-      pathname === '/sign-up')
-  ) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // Logged-in visitors keep the marketing site. Only a paid subscription opens the studio.
+  // Free accounts that open login or sign-up are sent back to the landing page.
+  if (user && (pathname === '/login' || pathname === '/sign-up')) {
+    const { data: subscription } = await supabase
+      .from('subscriptions')
+      .select('status, stripe_subscription_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const destination = hasPaidAccess(subscription) ? '/dashboard' : '/'
+    const url = request.nextUrl.clone()
+    url.pathname = destination
+    url.search = ''
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie)
+    })
+    return redirectResponse
   }
 
   return supabaseResponse

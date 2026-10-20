@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { hasPaidAccess } from '@/lib/access'
 import DashboardSidebar from '@/components/dashboard/Sidebar'
 import DashboardTopBar from '@/components/dashboard/TopBar'
 
@@ -18,12 +19,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/onboarding')
   }
 
-  // Paywall guard: user must have an active or trialing subscription
-  const hasAccess =
-    subscription &&
-    (subscription.status === 'active' || subscription.status === 'trialing')
-
-  if (!hasAccess) {
+  // Paywall: the signup placeholder trial does not unlock the studio.
+  if (!hasPaidAccess(subscription)) {
     redirect('/checkout')
   }
 

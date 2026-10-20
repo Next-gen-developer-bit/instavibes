@@ -1,66 +1,37 @@
 import Link from 'next/link'
-import { Instagram, ArrowRight, Sparkles } from 'lucide-react'
+import { ArrowRight, Heart, Play } from 'lucide-react'
+import type { MarketingViewer } from '@/lib/access'
 
-const HIGHLIGHTS = [
-  { label: 'Hook Breakdown', desc: 'Deconstruct winning reels' },
-  { label: 'Voice Matching', desc: 'Calibrated to your cadence' },
-  { label: 'Script Studio', desc: 'Camera-ready teleprompter scripts' },
+const REELS = [
+  { views: '1.1M', likes: '16.6K', rotate: '-8deg', delay: '0s', accent: '#FF5A4E' },
+  { views: '300K', likes: '3.4K', rotate: '6deg', delay: '0.08s', accent: '#FF8C42' },
+  { views: '97K', likes: '7.8K', rotate: '-2deg', delay: '0.16s', accent: '#121211' },
 ]
 
-const AVATARS = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Jasmine',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Arjun',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Priya',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Rohan',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Sneha',
-]
-
-export default function Hero() {
+export default function Hero({ viewer }: { viewer: MarketingViewer }) {
   return (
-    <section
-      id="top"
-      className="relative overflow-hidden px-6 pb-20 pt-40 sm:pt-48"
-    >
-      {/* Background glows */}
+    <section id="top" className="relative overflow-hidden px-5 sm:px-6 pb-16 pt-10 sm:pt-16">
       <div
-        className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[520px]"
         aria-hidden
         style={{
-          width: 600,
-          height: 600,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,90,78,0.28) 0%, transparent 70%)',
-          filter: 'blur(80px)',
-        }}
-      />
-      <div
-        className="pointer-events-none absolute right-0 top-1/3"
-        aria-hidden
-        style={{
-          width: 400,
-          height: 400,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,140,66,0.20) 0%, transparent 70%)',
-          filter: 'blur(80px)',
+          background:
+            'radial-gradient(ellipse 80% 70% at 50% -10%, rgba(255,90,78,0.18) 0%, rgba(255,140,66,0.08) 40%, transparent 70%)',
         }}
       />
 
-      <div className="relative z-10 mx-auto max-w-5xl">
-        {/* Badge */}
-        <div className="flex justify-center">
-          <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/8 bg-white px-4 py-1.5 text-xs font-medium text-[var(--color-muted)] shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" style={{ animation: 'pulse 2s infinite' }} />
-            Idea → hook → script from any viral reel
-          </span>
-        </div>
+      <div className="relative z-10 mx-auto max-w-3xl text-center">
+        <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-black/8 bg-white px-4 py-1.5 text-xs font-medium text-[var(--color-muted)] shadow-sm">
+          Idea → hook → script from any viral reel
+        </span>
 
-        {/* Headline */}
         <h1
-          className="text-center font-semibold tracking-tight text-[var(--color-text)]"
-          style={{ fontSize: 'clamp(36px, 7vw, 72px)', lineHeight: '1.02', letterSpacing: '-0.025em' }}
+          className="font-semibold tracking-tight text-[var(--color-text)]"
+          style={{ fontSize: 'clamp(34px, 6vw, 64px)', lineHeight: '1.05', letterSpacing: '-0.03em' }}
         >
           Grow and monetize your{' '}
-          <span
+          <em
+            className="not-italic"
             style={{
               fontStyle: 'italic',
               background: 'linear-gradient(135deg, #FF5A4E 0%, #FF8C42 100%)',
@@ -70,149 +41,64 @@ export default function Hero() {
             }}
           >
             Instagram audience
-          </span>
+          </em>
           , fast
         </h1>
 
-        {/* Sub */}
-        <p
-          className="mx-auto mt-6 max-w-xl text-center text-[var(--color-muted)]"
-          style={{ fontSize: 'clamp(16px, 3vw, 18px)', lineHeight: '1.65' }}
-        >
+        <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[var(--color-muted)] sm:text-lg">
           instavibes learns how you talk, turns any viral reel into your next
           script, and writes it in English, Hindi, or Hinglish.
         </p>
 
-        {/* Social proof */}
-        <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-          <div className="flex -space-x-2">
-            {AVATARS.map((src, i) => (
-              <div
-                key={i}
-                className="h-8 w-8 overflow-hidden rounded-full border-2 border-white bg-[var(--color-surface)]"
-                style={{ zIndex: AVATARS.length - i }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={src} alt="" className="h-full w-full object-cover" />
-              </div>
-            ))}
-          </div>
-          <p className="text-sm text-[var(--color-muted)]">
-            <span className="font-semibold text-[var(--color-text)]">AI Script Studio</span> built for Instagram creators
-          </p>
-        </div>
-
-        {/* CTAs */}
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-center gap-3">
           <Link
-            href="/sign-up"
-            className="flex items-center gap-2 rounded-full bg-[var(--color-button)] px-8 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-88"
+            href={viewer.isLoggedIn ? viewer.appHref : '/sign-up'}
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--color-button)] px-7 py-3.5 text-[15px] font-semibold text-white transition-opacity hover:opacity-88"
           >
-            Try free for 3 days
+            {viewer.isLoggedIn ? viewer.appLabel : 'Try free for 3 days'}
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <p className="text-xs text-[var(--color-muted)]">No credit card · Cancel anytime</p>
+          <p className="text-xs text-[var(--color-muted)]">Nothing charged for 3 days · Cancel anytime</p>
         </div>
+      </div>
 
-        {/* Phone mockup */}
-        <div className="relative mx-auto mt-16 max-w-xs sm:max-w-sm">
-          {/* Desktop feature highlights */}
-          {HIGHLIGHTS.map((h, i) => (
-            <div
-              key={h.label}
-              className="absolute hidden items-center gap-3 rounded-2xl border border-black/8 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm lg:flex"
-              style={{
-                left: i % 2 === 0 ? -150 : undefined,
-                right: i % 2 === 1 ? -150 : undefined,
-                top: `${20 + i * 28}%`,
-              }}
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E1306C]/10 text-[#E1306C]">
-                <Instagram className="h-5 w-5" />
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-bold text-[var(--color-text)]">
-                  {h.label}
-                </span>
-                <span className="text-[11px] font-medium text-[var(--color-muted)]">
-                  {h.desc}
-                </span>
-              </div>
-            </div>
-          ))}
-
-          {/* Phone frame */}
+      <div className="relative mx-auto mt-14 flex max-w-4xl items-end justify-center gap-3 sm:gap-5 px-2">
+        {REELS.map((reel, i) => (
           <div
-            className="relative mx-auto overflow-hidden border border-black/8 bg-[var(--color-surface)] shadow-2xl"
-            style={{ borderRadius: '2.5rem', aspectRatio: '9 / 16', width: '100%' }}
+            key={reel.views}
+            className={`relative w-[31%] max-w-[220px] overflow-hidden rounded-[1.6rem] border border-black/8 bg-[#1a1a1a] shadow-2xl ${
+              i === 1 ? 'mb-0 sm:-mb-6' : 'mb-6 sm:mb-10'
+            }`}
+            style={{
+              aspectRatio: '9 / 14',
+              transform: `rotate(${reel.rotate})`,
+            }}
           >
             <div
               className="absolute inset-0"
               style={{
-                background: 'linear-gradient(135deg, rgba(255,90,78,0.10) 0%, transparent 50%, rgba(255,140,66,0.08) 100%)',
+                background: `linear-gradient(180deg, ${reel.accent}33 0%, #111 70%)`,
               }}
             />
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-              <div
-                className="flex h-16 w-16 items-center justify-center rounded-2xl"
-                style={{ background: 'rgba(255,90,78,0.12)' }}
-              >
-                <Instagram className="h-8 w-8" style={{ color: 'var(--color-accent)' }} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-[var(--color-text)]">Viral Reel Feed</p>
-                <p className="mt-1 text-xs text-[var(--color-muted)]">Trending in your niche right now</p>
-              </div>
-              <div className="w-full space-y-2.5">
-                {[0.9, 0.75, 0.6].map((opacity, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-2.5 rounded-xl border border-black/6 bg-white/80 p-2.5 shadow-sm backdrop-blur-sm"
-                    style={{ opacity }}
-                  >
-                    <div
-                      className="h-9 w-9 shrink-0 rounded-xl"
-                      style={{ background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-2))' }}
-                    />
-                    <div className="flex-1 space-y-1.5 text-left">
-                      <div
-                        className="h-2 rounded-full bg-black/10"
-                        style={{ width: `${65 - i * 12}%` }}
-                      />
-                      <div
-                        className="h-1.5 rounded-full bg-black/6"
-                        style={{ width: `${45 - i * 8}%` }}
-                      />
-                    </div>
-                    <span className="shrink-0 rounded-full bg-[var(--color-accent)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--color-accent)]">
-                      Viral
-                    </span>
-                  </div>
-                ))}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-md">
+                <Play className="h-5 w-5 fill-white text-white" />
               </div>
             </div>
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+              <span className="text-[11px] font-semibold sm:text-sm">{reel.views} views</span>
+              <span className="flex items-center gap-1 text-[11px] font-medium text-white/80 sm:text-xs">
+                <Heart className="h-3 w-3 fill-white" />
+                {reel.likes}
+              </span>
+            </div>
           </div>
-
-          {/* Mobile feature highlights */}
-          <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center gap-2 lg:hidden">
-            {HIGHLIGHTS.map((h) => (
-              <div
-                key={h.label}
-                className="flex items-center gap-2 rounded-xl border border-black/8 bg-white/90 px-3 py-2 shadow-sm backdrop-blur-sm"
-              >
-                <Instagram className="h-4 w-4 shrink-0 text-[#E1306C]" />
-                <span className="text-[11px] font-semibold text-[var(--color-text)]">
-                  {h.label}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <p className="mt-4 text-center text-xs sm:text-sm text-[var(--color-muted)]">
-            Break down winning hook structures and write original scripts in your authentic voice.
-          </p>
-        </div>
+        ))}
       </div>
+
+      <p className="mt-10 text-center text-sm font-medium text-[var(--color-muted)]">
+        Scripts written for creators already posting to millions of views
+      </p>
     </section>
   )
 }

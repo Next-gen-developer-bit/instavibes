@@ -3,16 +3,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { rateLimits } from '@/lib/security/rate-limit'
-
-function getAppUrl(): string {
-  const url = process.env.NEXT_PUBLIC_APP_URL?.trim()
-  if (url) return url.replace(/\/$/, '')
-  return 'http://localhost:3000'
-}
+import { getAppUrl, sanitizeInternalPath } from '@/lib/app-url'
 
 export async function signInWithPassword(formData: FormData) {
   const email = (formData.get('email') as string)?.trim()?.toLowerCase()
   const password = formData.get('password') as string
+  const next = sanitizeInternalPath(formData.get('redirectTo') as string)
 
   if (!email || !password) {
     return { error: 'Please enter both your email and password.' }
@@ -22,7 +18,6 @@ export async function signInWithPassword(formData: FormData) {
     return { error: 'Input exceeds maximum allowed length.' }
   }
 
-  // Rate limit: max 10 attempts per minute per email
   const limitCheck = rateLimits.checkAuth(email)
   if (!limitCheck.success) {
     return {
@@ -34,13 +29,14 @@ export async function signInWithPassword(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password })
   if (error) return { error: error.message }
 
-  redirect('/dashboard')
+  redirect(next)
 }
 
 export async function signUpWithPassword(formData: FormData) {
   const email = (formData.get('email') as string)?.trim()?.toLowerCase()
   const password = formData.get('password') as string
   const fullName = (formData.get('fullName') as string)?.trim()
+  const next = sanitizeInternalPath(formData.get('redirectTo') as string, '/onboarding')
 
   if (!email || !password) {
     return { error: 'Please enter both your email and password.' }
@@ -50,7 +46,6 @@ export async function signUpWithPassword(formData: FormData) {
     return { error: 'Input exceeds maximum allowed length.' }
   }
 
-  // Rate limit: max 10 attempts per minute per email
   const limitCheck = rateLimits.checkAuth(email)
   if (!limitCheck.success) {
     return {
@@ -59,29 +54,40 @@ export async function signUpWithPassword(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.signUp({
+  const appUrl = await getAppUrl()
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { full_name: fullName },
-      emailRedirectTo: `${getAppUrl()}/auth/callback`,
+      emailRedirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   })
   if (error) return { error: error.message }
 
-  redirect('/dashboard')
+  if (!data.session) {
+    return {
+      error:
+        'Check your email to confirm your account, then come back here to sign in.',
+    }
+  }
+
+  redirect(next)
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(nextPath?: string) {
   const supabase = await createClient()
+  const appUrl = await getAppUrl()
+  const next = sanitizeInternalPath(nextPath, '/dashboard')
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${getAppUrl()}/auth/callback`,
+      redirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent(next)}`,
     },
   })
   if (error) return { error: error.message }
   if (data.url) redirect(data.url)
+  return { error: 'Google sign-in is not available. Use email and password, or enable Google in Supabase Auth providers.' }
 }
 
 export async function signOut() {
@@ -101,7 +107,6 @@ export async function requestPasswordReset(formData: FormData) {
     return { error: 'Email address is too long.' }
   }
 
-  // Rate limit: max 3 password reset requests per 10 minutes per email
   const limitCheck = rateLimits.checkPasswordReset(email)
   if (!limitCheck.success) {
     return {
@@ -110,8 +115,9 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient()
+  const appUrl = await getAppUrl()
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${getAppUrl()}/auth/callback?next=/reset-password`,
+    redirectTo: `${appUrl}/auth/callback?next=/reset-password`,
   })
 
   if (error) {
@@ -146,4 +152,3 @@ export async function updatePassword(formData: FormData) {
 
   return { success: true }
 }
-

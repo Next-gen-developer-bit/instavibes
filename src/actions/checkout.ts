@@ -1,13 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { getAppUrl } from '@/lib/app-url'
 import { buildCreemCheckoutUrl, getCreemConfig } from '@/lib/creem/config'
-
-function getAppUrl(): string {
-  const url = process.env.NEXT_PUBLIC_APP_URL?.trim()
-  if (url) return url.replace(/\/$/, '')
-  return 'http://localhost:3000'
-}
 
 export interface CheckoutResult {
   checkoutUrl?: string
@@ -15,9 +10,31 @@ export interface CheckoutResult {
   isDirectLink?: boolean
 }
 
+function creemErrorMessage(status: number, body: string) {
+  let parsed: { message?: string; error?: string } | null = null
+  try {
+    parsed = JSON.parse(body)
+  } catch {
+    parsed = null
+  }
+  const detail = parsed?.message || parsed?.error || body.slice(0, 280)
+
+  if (status === 401) {
+    return 'Creem API key was rejected. Confirm CREEM_API_KEY matches the approved live key in the Creem dashboard.'
+  }
+  if (status === 404) {
+    return 'Creem product was not found. Confirm CREEM_PRODUCT_ID is the approved product ID from the Creem dashboard.'
+  }
+  if (detail) {
+    return `Creem checkout failed (${status}): ${detail}`
+  }
+  return `Creem checkout failed (${status}). Check the API key and product ID in environment variables.`
+}
+
 /**
  * Initiates Creem checkout for the authenticated user.
- * Supports both direct Creem hosted checkout links and API session generation.
+ * Prefers the Checkout Session API, then falls back to the hosted payment link.
+ * https://docs.creem.io/api-reference/endpoint/create-checkout
  */
 export async function createCreemCheckoutSession(
   billingInterval: 'month' | 'year' = 'month'
@@ -32,70 +49,80 @@ export async function createCreemCheckoutSession(
       return { error: 'Please sign in to proceed to checkout.' }
     }
 
-    const appUrl = getAppUrl()
+    const appUrl = await getAppUrl()
     const successUrl = `${appUrl}/checkout/success`
-    const cancelUrl = `${appUrl}/onboarding?canceled=true`
     const config = getCreemConfig()
+    const productId =
+      billingInterval === 'year' ? config.annualProductId : config.monthlyProductId
 
-    // 1. If Creem API key is provided, attempt programmatic session creation
     if (config.apiKey) {
-      try {
-        const productId =
-          billingInterval === 'year'
-            ? config.annualProductId
-            : config.monthlyProductId
-
-        const response = await fetch('https://api.creem.io/v1/checkouts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Api-Key': config.apiKey,
-            Authorization: `Bearer ${config.apiKey}`,
-          },
-          body: JSON.stringify({
-            product_id: productId,
-            customer_email: user.email,
-            client_reference_id: user.id,
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            metadata: {
-              user_id: user.id,
-              billing_interval: billingInterval,
-            },
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          const checkoutUrl = data.checkout_url || data.url
-          if (checkoutUrl) {
-            return { checkoutUrl, isDirectLink: false }
-          }
+      if (!productId) {
+        return {
+          error:
+            'Creem product ID is missing. Set CREEM_PRODUCT_ID (or CREEM_PRODUCT_ID_MONTHLY / CREEM_PRODUCT_ID_ANNUAL) to the approved product.',
         }
-      } catch (apiErr) {
-        console.warn('Creem API session creation fallback to hosted link:', apiErr)
       }
+
+      const response = await fetch(`${config.apiBase}/v1/checkouts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': config.apiKey,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          request_id: user.id,
+          success_url: successUrl,
+          customer: user.email ? { email: user.email } : undefined,
+          metadata: {
+            user_id: user.id,
+            billing_interval: billingInterval,
+          },
+        }),
+      })
+
+      const raw = await response.text()
+      let data: { checkout_url?: string; url?: string } = {}
+      try {
+        data = raw ? JSON.parse(raw) : {}
+      } catch {
+        data = {}
+      }
+
+      if (response.ok) {
+        const checkoutUrl = data.checkout_url || data.url
+        if (checkoutUrl) {
+          return { checkoutUrl, isDirectLink: false }
+        }
+      }
+
+      console.error('Creem API checkout failed', {
+        status: response.status,
+        body: raw.slice(0, 500),
+        productId,
+        apiBase: config.apiBase,
+      })
+      return { error: creemErrorMessage(response.status, raw) }
     }
 
-    // 2. Build pre-populated Creem hosted checkout link
     const checkoutUrl = buildCreemCheckoutUrl({
       billingInterval,
       userEmail: user.email,
       userId: user.id,
       successUrl,
-      cancelUrl,
     })
 
     if (!checkoutUrl) {
       return {
         error:
-          'Payment gateway is currently pending verification. Please try again in a few moments or contact support.',
+          'Payment is not configured. Set CREEM_API_KEY and CREEM_PRODUCT_ID (the approved Creem product) on Vercel, then redeploy.',
       }
     }
 
     return { checkoutUrl, isDirectLink: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to start checkout.'
     console.error('createCreemCheckoutSession error:', err)
-    return { error: err.message || 'Failed to start checkout.' }
+    return { error: message }
   }
 }

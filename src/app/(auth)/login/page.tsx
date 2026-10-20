@@ -2,12 +2,18 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Mail, Lock, Chrome, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import { signInWithPassword, signInWithGoogle } from '@/actions/auth'
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
+  const urlError = searchParams.get('error')
   const [showPw, setShowPw] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(
+    urlError ? 'Sign-in did not complete. Please try again with email, or reconnect Google in Supabase Auth.' : null
+  )
   const [isPending, startTransition] = useTransition()
   const [isGooglePending, startGoogleTransition] = useTransition()
 
@@ -15,6 +21,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
     const fd = new FormData(e.currentTarget)
+    fd.set('redirectTo', redirectTo)
     startTransition(async () => {
       const result = await signInWithPassword(fd)
       if (result?.error) setError(result.error)
@@ -24,7 +31,7 @@ export default function LoginPage() {
   function handleGoogle() {
     setError(null)
     startGoogleTransition(async () => {
-      const result = await signInWithGoogle()
+      const result = await signInWithGoogle(redirectTo)
       if (result?.error) setError(result.error)
     })
   }
@@ -64,6 +71,7 @@ export default function LoginPage() {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
+        <input type="hidden" name="redirectTo" value={redirectTo} />
         {/* Email */}
         <div>
           <label htmlFor="login-email" className="mb-1.5 block text-xs font-semibold text-[var(--color-text)]">
