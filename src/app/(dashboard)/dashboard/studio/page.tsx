@@ -72,7 +72,7 @@ export default function StudioPage() {
         language,
       })
       if (err) {
-        setError(err.includes('Please') ? err : 'Failed to generate script. Please try again.')
+        setError(err)
         return
       }
       if (result) {

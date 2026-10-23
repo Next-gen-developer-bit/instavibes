@@ -4,6 +4,8 @@ import { hasPaidAccess } from '@/lib/access'
 import DashboardSidebar from '@/components/dashboard/Sidebar'
 import DashboardTopBar from '@/components/dashboard/TopBar'
 
+export const maxDuration = 60
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

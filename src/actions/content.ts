@@ -45,7 +45,7 @@ async function resolveActorId(slug: string): Promise<string> {
  * The `runSync` endpoint is no longer available (returns 404), so we use the
  * async API: create a run → poll until done → fetch dataset items.
  */
-async function apifyRun<T = any>(actorId: string, input: object): Promise<T[]> {
+async function apifyRun<T = any>(actorId: string, input: object, timeoutMs = 120_000): Promise<T[]> {
   const token = getApifyToken()
   const id = await resolveActorId(actorId)
 
@@ -69,10 +69,11 @@ async function apifyRun<T = any>(actorId: string, input: object): Promise<T[]> {
   const runId = run.id
   const datasetId = run.defaultDatasetId
 
-  // 2. Poll until the run finishes (or times out).
-  const deadline = Date.now() + 120_000
+  // 2. Poll until the run finishes. A single reel must not block script generation.
+  const deadline = Date.now() + timeoutMs
+  let finished = false
   while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, 2000))
+    await new Promise(r => setTimeout(r, 1500))
     const statusRes = await fetch(
       `https://api.apify.com/v2/actor-runs/${runId}`,
       { headers: { Authorization: `Bearer ${token}` } },
@@ -82,13 +83,19 @@ async function apifyRun<T = any>(actorId: string, input: object): Promise<T[]> {
       throw new Error(`Apify run status failed (${statusRes.status}): ${text.slice(0, 300)}`)
     }
     const { data: runStatus } = await statusRes.json()
-    if (runStatus.status === 'SUCCEEDED') break
+    if (runStatus.status === 'SUCCEEDED') {
+      finished = true
+      break
+    }
     if (runStatus.status === 'FAILED') {
       throw new Error(`Apify run failed: ${runStatus.statusMessage || 'unknown error'}`)
     }
-    if (runStatus.status === 'TIMED_OUT') {
-      throw new Error('Apify run timed out')
+    if (runStatus.status === 'TIMED_OUT' || runStatus.status === 'ABORTED') {
+      throw new Error(`Apify run ended with status: ${runStatus.status}`)
     }
+  }
+  if (!finished) {
+    throw new Error('Apify reel lookup timed out')
   }
 
   // 3. Fetch dataset items.
@@ -255,10 +262,10 @@ export async function fetchReelData(url: string): Promise<{ reel: Reel | null }>
   // 1. Try Apify if available
   try {
     const items = await apifyRun(APIFY_ACTOR_ID, {
-      resultsType: 'reels',
+      resultsType: 'posts',
       directUrls: [cleanUrl],
       resultsLimit: 1,
-    })
+    }, 6_000)
     if (items.length) {
       return { reel: normalizeReel(items[0]) }
     }
@@ -306,12 +313,52 @@ export async function fetchReelData(url: string): Promise<{ reel: Reel | null }>
 // ---------------------------------------------------------------------------
 
 function getOpenRouterConfig() {
-  const apiKey = process.env.OPENROUTER_API_KEY
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim()
   if (!apiKey) throw new Error('OPENROUTER_API_KEY not configured')
   return {
     apiKey,
-    model: process.env.OPENROUTER_MODEL || 'anthropic/claude-sonnet-4.6',
+    model: process.env.OPENROUTER_MODEL?.trim() || 'anthropic/claude-sonnet-4.6',
   }
+}
+
+function openRouterMessageText(message: { content?: unknown; text?: unknown } | undefined): string {
+  if (!message) return ''
+  if (typeof message.content === 'string') return message.content
+  if (Array.isArray(message.content)) {
+    return message.content
+      .map((part) => {
+        if (typeof part === 'string') return part
+        if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
+          return part.text
+        }
+        return ''
+      })
+      .join('\n')
+      .trim()
+  }
+  return typeof message.text === 'string' ? message.text : ''
+}
+
+function openRouterError(status: number, body: string): string {
+  let detail = ''
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: string } }
+    detail = parsed.error?.message || ''
+  } catch {
+    detail = body.slice(0, 180)
+  }
+  if (status === 401 || /user not found|invalid api key/i.test(detail)) {
+    return 'The AI writing key was rejected. In Vercel, replace OPENROUTER_API_KEY with a current key from openrouter.ai, then redeploy.'
+  }
+  if (status === 402) {
+    return 'OpenRouter has no credits left for this key. Add credits, then try again.'
+  }
+  if (status === 404) {
+    return 'The configured AI model was not found. Check OPENROUTER_MODEL in Vercel.'
+  }
+  return detail
+    ? `Script generation failed (${status}): ${detail}`
+    : 'Failed to generate script. Please try again.'
 }
 
 function buildScriptPrompt(reel: Reel, voice: ContentBrain | null, language: Language): string {
@@ -470,13 +517,14 @@ export async function generateScript(params: { reelUrl: string; language: Langua
     })
 
     if (!res.ok) {
-      console.error('OpenRouter error:', await res.text())
-      return { error: 'Failed to generate script. Please try again.' }
+      const body = await res.text()
+      console.error('OpenRouter error:', res.status, body.slice(0, 400))
+      return { error: openRouterError(res.status, body) }
     }
 
     const data = await res.json()
     const choice = data?.choices?.[0]?.message
-    const scriptText = (typeof choice?.content === 'string' ? choice.content : choice?.text) || ''
+    const scriptText = openRouterMessageText(choice)
 
     if (!scriptText.trim()) {
       return { error: 'Failed to generate script. Please try again.' }
@@ -509,6 +557,10 @@ export async function generateScript(params: { reelUrl: string; language: Langua
     return { script: script as Script }
   } catch (err) {
     console.error('generateScript error:', err)
+    const message = err instanceof Error ? err.message : ''
+    if (message.includes('OPENROUTER_API_KEY')) {
+      return { error: 'AI writing is not configured. Add OPENROUTER_API_KEY in Vercel and redeploy.' }
+    }
     return { error: 'Failed to generate script. Please try again.' }
   }
 }
