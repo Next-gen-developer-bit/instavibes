@@ -13,7 +13,7 @@ import FinalCTA from '@/components/marketing/FinalCTA'
 import Footer from '@/components/marketing/Footer'
 
 interface HomePageProps {
-  searchParams?: Promise<{ code?: string; next?: string }>
+  searchParams?: Promise<{ code?: string; next?: string; canceled?: string }>
 }
 
 export default async function HomePage(props: HomePageProps) {
@@ -52,6 +52,13 @@ export default async function HomePage(props: HomePageProps) {
       <LaunchBar />
       <Navbar viewer={viewer} />
       <main>
+        {searchParams.canceled === 'trial' && (
+          <div className="mx-auto mt-6 max-w-3xl px-5">
+            <p className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-800">
+              Your 3-day trial is canceled. You will not be charged.
+            </p>
+          </div>
+        )}
         <Hero viewer={viewer} />
         <HowItWorks />
         <FeaturesGrid />

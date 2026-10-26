@@ -4,6 +4,8 @@ import { useState, useTransition, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { User, Instagram, Shield, Bell, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react'
 import { updateProfileName, updateInstagramHandle } from '@/actions/profile'
+import { cancelSubscription } from '@/actions/subscription'
+import ConfirmModal from '@/components/ui/ConfirmModal'
 import type { Database } from '@/types/database'
 
 type Profile = Database['public']['Tables']['profiles']['Row'] | null
@@ -37,6 +39,12 @@ export default function SettingsClient({ initialProfile, subscription }: Setting
   // Notifications State
   const [notifyWatchlist, setNotifyWatchlist] = useState(true)
   const [notifyWeekly, setNotifyWeekly] = useState(true)
+  const [plan, setPlan] = useState(subscription)
+  const [confirmCancel, setConfirmCancel] = useState(false)
+  const [canceling, setCanceling] = useState(false)
+
+  const onTrial = plan?.status === 'trialing'
+  const canCancel = (onTrial || plan?.status === 'active') && !plan?.cancel_at
 
   // Toast Notification State
   const [toast, setToast] = useState<ToastState | null>(null)
@@ -261,39 +269,116 @@ export default function SettingsClient({ initialProfile, subscription }: Setting
         <div className="flex items-center justify-between rounded-xl bg-[var(--color-surface)] px-4 py-3">
           <div>
             <p className="text-sm font-semibold text-[var(--color-text)] capitalize">
-              {subscription?.status ?? 'Free'} plan
+              {plan?.status === 'canceled' ? 'Canceled' : plan?.status ?? 'Free'} plan
             </p>
-            {subscription?.trial_end && (
+            {onTrial && plan?.trial_end && !plan.cancel_at && (
               <p className="text-xs text-[var(--color-muted)]">
                 Trial ends{' '}
-                {new Date(subscription.trial_end).toLocaleDateString('en-IN', {
+                {new Date(plan.trial_end).toLocaleDateString('en-IN', {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',
                 })}
+                . Cancel before then and you will not be charged.
+              </p>
+            )}
+            {plan?.cancel_at && plan.status !== 'canceled' && (
+              <p className="text-xs text-[var(--color-muted)]">
+                Cancels on{' '}
+                {new Date(plan.cancel_at).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                . You will not be charged again.
+              </p>
+            )}
+            {plan?.status === 'canceled' && (
+              <p className="text-xs text-[var(--color-muted)]">
+                Canceled. You will not be charged.
               </p>
             )}
           </div>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-bold ${subscription?.status === 'active'
+            className={`rounded-full px-3 py-1 text-xs font-bold ${plan?.status === 'active'
                 ? 'bg-emerald-100 text-emerald-700'
-                : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                : plan?.status === 'canceled'
+                  ? 'bg-zinc-100 text-zinc-600'
+                  : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
               }`}
           >
-            {subscription?.status === 'active'
+            {plan?.status === 'active'
               ? 'Active'
-              : subscription?.status === 'trialing'
+              : plan?.status === 'trialing'
                 ? 'Trial'
-                : 'Free'}
+                : plan?.status === 'canceled'
+                  ? 'Canceled'
+                  : 'Free'}
           </span>
         </div>
-        <a
-          href="/checkout"
-          className="block text-center text-sm font-semibold text-[var(--color-accent)] hover:underline underline-offset-4"
-        >
-          Upgrade to Pro →
-        </a>
+        {canCancel && (
+          <button
+            type="button"
+            onClick={() => setConfirmCancel(true)}
+            className="w-full rounded-full border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+          >
+            {onTrial ? 'Cancel 3-day trial' : 'Cancel subscription'}
+          </button>
+        )}
+        {!onTrial && plan?.status !== 'active' && plan?.status !== 'canceled' && (
+          <a
+            href="/checkout"
+            className="block text-center text-sm font-semibold text-[var(--color-accent)] hover:underline underline-offset-4"
+          >
+            Upgrade to Pro →
+          </a>
+        )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmCancel}
+        onClose={() => {
+          if (!canceling) setConfirmCancel(false)
+        }}
+        isLoading={canceling}
+        variant="danger"
+        title={onTrial ? 'Cancel your free trial?' : 'Cancel your subscription?'}
+        description={
+          onTrial
+            ? 'Your 3-day trial will stop now. Your card will not be charged.'
+            : 'You keep access until the end of this billing period, and you will not be charged again.'
+        }
+        confirmText={onTrial ? 'Cancel trial' : 'Cancel subscription'}
+        cancelText="Keep my plan"
+        onConfirm={() => {
+          setCanceling(true)
+          startTransition(async () => {
+            const result = await cancelSubscription()
+            setCanceling(false)
+            if (result.error) {
+              setConfirmCancel(false)
+              showToast(result.error, 'error')
+              return
+            }
+            setConfirmCancel(false)
+            showToast(result.message || 'Canceled.', 'success')
+            if (result.endedAccess) {
+              window.location.href = '/?canceled=trial'
+              return
+            }
+            setPlan((current) =>
+              current
+                ? {
+                    ...current,
+                    status: 'active',
+                    cancel_at: current.current_period_end || new Date().toISOString(),
+                  }
+                : current
+            )
+            router.refresh()
+          })
+        }}
+      />
 
       {/* Notifications Card */}
       <div className="hairline rounded-2xl bg-white p-6 shadow-sm space-y-5">
